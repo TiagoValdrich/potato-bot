@@ -1,0 +1,12 @@
+enums/BotListeningActivity.java
+ enums.BotListeningActivity
+commands/QuoteOfTheDay.java
+ commands.QuoteOfTheDay
+enums/BotPlayingActivity.java
+ enums.BotPlayingActivity
+commands/Help.java
+ commands.Help
+application/Application.java
+ application.Application
+discord/PotatoBot.java
+ discord.PotatoBot
