@@ -5,18 +5,16 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.HashMap;
 import java.util.Random;
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-
-import static java.net.HttpURLConnection.HTTP_OK;
 
 public class Quote extends ListenerAdapter {
 
@@ -24,56 +22,53 @@ public class Quote extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        OkHttpClient client = new OkHttpClient();
         Message message = event.getMessage();
 
         if (message.getContentRaw().equals("!quote")) {
             try {
-                URL url = new URL(QUOTES_URL);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                Request request = new Request.Builder()
+                        .url(QUOTES_URL)
+                        .addHeader("Accept", "application/json")
+                        .addHeader("Content-Type", "application/json")
+                        .build();
 
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.connect();
+                Response response = client.newCall(request).execute();
+                String strJson = response.body().string();
 
-                int responseCode = conn.getResponseCode();
+                HashMap<String, String> quote = this.getRandomQuote(strJson);
+                this.sendEmbed(quote, event);
 
-                if (responseCode == HTTP_OK) {
-                    Scanner sc = new Scanner(url.openStream());
-                    String strJSON = "";
-
-                    while (sc.hasNext()) {
-                        strJSON += sc.nextLine();
-                    }
-
-                    JSONArray jarray = new JSONArray(strJSON);
-                    Random rand = new Random();
-                    int randomIndex = rand.nextInt(jarray.length());
-
-                    JSONObject phrase = jarray.getJSONObject(randomIndex);
-                    String text = phrase.getString("text");
-                    String author = phrase.getString("author");
-
-                    EmbedBuilder embed = new EmbedBuilder();
-                    embed.setTitle(text);
-                    embed.setDescription(author);
-
-                    MessageChannel channel = event.getChannel();
-                    channel.sendTyping().completeAfter(1, TimeUnit.SECONDS);
-                    channel.sendMessage(embed.build()).queue();
-                    embed.clear();
-
-                } else {
-                    throw new Exception("Error on fetching quotes");
-                }
-            } catch (MalformedURLException e) {
-                this.handleError(event);
             } catch (IOException e) {
-                this.handleError(event);
-            } catch (Exception e) {
                 this.handleError(event);
             }
         }
+    }
+
+    private HashMap<String, String> getRandomQuote(String json) {
+        JSONArray jsonArray = new JSONArray(json);
+
+        Random rand = new Random();
+        int randomIndex = rand.nextInt(jsonArray.length());
+
+        JSONObject phrase = jsonArray.getJSONObject(randomIndex);
+
+        HashMap<String, String> quote = new HashMap<>();
+        quote.put("text", phrase.getString("text"));
+        quote.put("author", phrase.getString("author"));
+
+        return quote;
+    }
+
+    private void sendEmbed(HashMap<String, String> quote, MessageReceivedEvent event) {
+        EmbedBuilder embed = new EmbedBuilder();
+        embed.setTitle(quote.get("text"));
+        embed.setDescription(quote.get("author"));
+
+        MessageChannel channel = event.getChannel();
+        channel.sendTyping().completeAfter(1, TimeUnit.SECONDS);
+        channel.sendMessage(embed.build()).queue();
+        embed.clear();
     }
 
     private void handleError(MessageReceivedEvent event) {
