@@ -14,9 +14,9 @@ import javax.security.auth.login.LoginException;
 public class PotatoBot {
     private JDA jda;
 
-    public PotatoBot() {
+    public PotatoBot(String token) {
         try {
-            this.jda = JDABuilder.createDefault("NzE3MTU3MDIzODM3MzIzMzc2.Xtgcnw.2C0F1p4wDoaJ9dtjNAbdWG143Fc").build();
+            this.jda = JDABuilder.createDefault(token).build();
             this.jda.getPresence().setStatus(OnlineStatus.IDLE);
             this.setPlayingActivity(BotPlayingActivity.IM_DEPRESSED);
             this.jda.addEventListener(new Help());
