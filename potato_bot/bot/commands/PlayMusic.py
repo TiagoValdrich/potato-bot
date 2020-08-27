@@ -37,7 +37,8 @@ class PlayMusic(Command):
             if params:
                 voice_channel: VoiceChannel = message.author.voice.channel
 
-                if re.match("^(https:\/\/).+(youtube.com\/watch\?v=)", params[0]):
+                # If is to filter only for youtube.com: .+(youtube.com\/watch\?v=)
+                if re.match("^(https:\/\/)", params[0]):
                     voice_client: VoiceClient = None
                     music_filename = str(voice_channel.id)
 
