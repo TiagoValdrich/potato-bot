@@ -20,16 +20,12 @@ class Left(Command):
         }
 
     async def run(
-        self,
-        session: ClientSession,
-        message: Message,
-        params: list,
-        voice_clients: list,
+        self, session: ClientSession, message: Message, params: list, bot,
     ) -> dict:
         try:
             voice_channel: VoiceChannel = message.author.voice.channel
 
-            for vc in voice_clients:
+            for vc in bot.voice_clients:
                 same_voice_channel: bool = voice_channel.name == vc.channel.name
 
                 if same_voice_channel:

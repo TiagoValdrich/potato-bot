@@ -25,11 +25,7 @@ class HeadsOrTails(Command):
         return {"file": img_file, "embed": embed}
 
     async def run(
-        self,
-        session: ClientSession,
-        message: Message,
-        params: list,
-        voice_clients: list,
+        self, session: ClientSession, message: Message, params: list, bot,
     ) -> dict:
         try:
             channel = message.channel

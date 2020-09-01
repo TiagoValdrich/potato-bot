@@ -14,11 +14,7 @@ class Command:
         )
 
     async def run(
-        self,
-        session: ClientSession,
-        message: Message,
-        params: list,
-        voice_clients: list,
+        self, session: ClientSession, message: Message, params: list, bot,
     ) -> dict:
         raise NotImplemented(
             "This method must be implemented with the command functionality!"

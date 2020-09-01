@@ -26,12 +26,20 @@ class PlayMusic(Command):
 
         return embed
 
+    def download_and_play(self, info):
+        yt = YouTube(info["url"])
+        yt.streams.first().download(
+            output_path="resources/music/",
+            filename=info["filename"],
+            skip_existing=False,
+        )
+
+        info["voice_client"].play(
+            FFmpegPCMAudio(f"resources/music/{info['filename']}.mp4")
+        )
+
     async def run(
-        self,
-        session: ClientSession,
-        message: Message,
-        params: list,
-        voice_clients: list,
+        self, session: ClientSession, message: Message, params: list, bot,
     ) -> dict:
         try:
             if params:
@@ -42,8 +50,8 @@ class PlayMusic(Command):
                     voice_client: VoiceClient = None
                     music_filename = str(voice_channel.id)
 
-                    if voice_clients:
-                        for vc in voice_clients:
+                    if bot.voice_clients:
+                        for vc in bot.voice_clients:
                             same_voice_channel: bool = voice_channel.name == vc.channel.name
                             same_guild: bool = voice_channel.guild.id == vc.guild.id
 
@@ -63,16 +71,24 @@ class PlayMusic(Command):
                         if voice_client.is_playing():
                             voice_client.stop()
 
-                        yt = YouTube(params[0])
-                        yt.streams.first().download(
-                            output_path="resources/music/",
-                            filename=music_filename,
-                            skip_existing=False,
+                        bot.executor.submit(
+                            self.download_and_play,
+                            {
+                                "url": params[0],
+                                "filename": music_filename,
+                                "voice_client": voice_client,
+                            },
                         )
+                        # yt = YouTube(params[0])
+                        # yt.streams.first().download(
+                        #     output_path="resources/music/",
+                        #     filename=music_filename,
+                        #     skip_existing=False,
+                        # )
 
-                        voice_client.play(
-                            FFmpegPCMAudio(f"resources/music/{music_filename}.mp4")
-                        )
+                        # voice_client.play(
+                        #     FFmpegPCMAudio(f"resources/music/{music_filename}.mp4")
+                        # )
 
                 else:
                     music = " ".join(params)

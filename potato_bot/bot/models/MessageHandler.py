@@ -3,7 +3,7 @@ from os.path import isfile, join
 from importlib import import_module
 from potato_bot import ROOT_PATH
 from potato_bot.bot.models.Command import Command
-from discord import Client, Message, Embed
+from discord import Message, Embed
 from aiohttp import ClientSession
 
 
@@ -16,7 +16,7 @@ class MessageHandler:
     BOT_PREFIX = "!"
     HELP_COMMAND = "help"
 
-    def __init__(self, bot: Client, message: Message, session: ClientSession):
+    def __init__(self, bot, message: Message, session: ClientSession):
         self.message = message
         self.bot = bot
         self.session = session
@@ -79,5 +79,5 @@ class MessageHandler:
             if command_name in list(self.commands_available.keys()):
                 command: Command = self.commands_available[command_name]()
                 await command.run(
-                    self.session, self.message, striped_message, self.bot.voice_clients
+                    self.session, self.message, striped_message, self.bot,
                 )
