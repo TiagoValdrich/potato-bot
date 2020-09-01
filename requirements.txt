@@ -4,3 +4,4 @@ black
 discord.py[voice]
 pytube3==9.6.4
 youtube-search==1.1.0
+redis==3.5.3

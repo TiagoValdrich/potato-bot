@@ -1,9 +1,10 @@
-import logging, re, threading
+import logging, re, threading, asyncio
 from potato_bot.bot.models.Command import Command
 from potato_bot.bot.models.YoutubeSearch import YoutubeSearch
 from discord import Message, VoiceChannel, VoiceClient, Embed, FFmpegPCMAudio
 from aiohttp import ClientSession
 from pytube import YouTube
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +28,19 @@ class PlayMusic(Command):
         return embed
 
     def download_and_play(self, info):
-        yt = YouTube(info["url"])
-        yt.streams.first().download(
-            output_path="resources/music/",
-            filename=info["filename"],
-            skip_existing=False,
-        )
+        queue = info["queue"]
 
-        info["voice_client"].play(
-            FFmpegPCMAudio(f"resources/music/{info['filename']}.mp4")
-        )
+        if len(queue["musics"]) > 0:
+            yt = YouTube(queue["musics"].pop(0))
+            yt.streams.first().download(
+                output_path="resources/music/",
+                filename=info["filename"],
+                skip_existing=False,
+            )
+
+            info["voice_client"].play(
+                FFmpegPCMAudio(f"resources/music/{info['filename']}.mp4"),
+            )
 
     async def run(
         self, session: ClientSession, message: Message, params: list, bot,
@@ -48,7 +52,7 @@ class PlayMusic(Command):
                 # If is to filter only for youtube.com: .+(youtube.com\/watch\?v=)
                 if re.match("^(https:\/\/)", params[0]):
                     voice_client: VoiceClient = None
-                    music_filename = str(voice_channel.id)
+                    voice_channel_id = str(voice_channel.id)
 
                     if bot.voice_clients:
                         for vc in bot.voice_clients:
@@ -69,26 +73,20 @@ class PlayMusic(Command):
 
                     if voice_client.is_connected():
                         if voice_client.is_playing():
-                            voice_client.stop()
+                            if voice_channel_id in bot.queues.keys():
+                                bot.queues[voice_channel_id]["musics"].append(params[0])
+                        else:
+                            bot.queues[voice_channel_id] = {"musics": [params[0]]}
 
-                        bot.executor.submit(
-                            self.download_and_play,
-                            {
-                                "url": params[0],
-                                "filename": music_filename,
-                                "voice_client": voice_client,
-                            },
-                        )
-                        # yt = YouTube(params[0])
-                        # yt.streams.first().download(
-                        #     output_path="resources/music/",
-                        #     filename=music_filename,
-                        #     skip_existing=False,
-                        # )
-
-                        # voice_client.play(
-                        #     FFmpegPCMAudio(f"resources/music/{music_filename}.mp4")
-                        # )
+                    bot.loop.run_in_executor(
+                        None,
+                        self.download_and_play,
+                        {
+                            "filename": voice_channel_id,
+                            "voice_client": voice_client,
+                            "queue": bot.queues[voice_channel_id],
+                        },
+                    )
 
                 else:
                     music = " ".join(params)
