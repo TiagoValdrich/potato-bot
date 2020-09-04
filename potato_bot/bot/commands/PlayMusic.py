@@ -1,6 +1,7 @@
 import logging, re, threading, asyncio
 from potato_bot.bot.models.Command import Command
 from potato_bot.bot.models.YoutubeSearch import YoutubeSearch
+from potato_bot.bot.models.PlaylistCli import PlaylistCli
 from discord import Message, VoiceChannel, VoiceClient, Embed, FFmpegPCMAudio
 from aiohttp import ClientSession
 from pytube import YouTube
@@ -10,12 +11,34 @@ logger = logging.getLogger(__name__)
 
 
 class PlayMusic(Command):
+    def __init__(self):
+        self.playlist_cli = PlaylistCli()
+
     @staticmethod
     def info():
         return {
             "name": "play",
             "description": "Play Youtube songs on your current voice channel.\n Type `!play <youtube_url>` and have fun!",
         }
+
+    def download_and_play(self, info, error):
+        playlist_cli = PlaylistCli()
+        musics = playlist_cli.get_musics(info["voice_channel_id"])
+
+        if musics:
+            yt = YouTube(playlist_cli.get_next_music(info["voice_channel_id"]))
+            yt.streams.first().download(
+                output_path="resources/music/",
+                filename=info["voice_channel_id"],
+                skip_existing=False,
+            )
+
+            cb = partial(self.download_and_play, info)
+
+            info["voice_client"].play(
+                FFmpegPCMAudio(f"resources/music/{info['voice_channel_id']}.mp4"),
+                after=cb,
+            )
 
     def build_musics_embed(self, musics: list):
         embed = Embed(title="Select a music from list below", color=0x4287F5)
@@ -26,21 +49,6 @@ class PlayMusic(Command):
             embed.add_field(name=name, value=title, inline=False)
 
         return embed
-
-    def download_and_play(self, info):
-        queue = info["queue"]
-
-        if len(queue["musics"]) > 0:
-            yt = YouTube(queue["musics"].pop(0))
-            yt.streams.first().download(
-                output_path="resources/music/",
-                filename=info["filename"],
-                skip_existing=False,
-            )
-
-            info["voice_client"].play(
-                FFmpegPCMAudio(f"resources/music/{info['filename']}.mp4"),
-            )
 
     async def run(
         self, session: ClientSession, message: Message, params: list, bot,
@@ -73,20 +81,32 @@ class PlayMusic(Command):
 
                     if voice_client.is_connected():
                         if voice_client.is_playing():
-                            if voice_channel_id in bot.queues.keys():
-                                bot.queues[voice_channel_id]["musics"].append(params[0])
+                            if voice_channel_id in self.playlist_cli.get_playlists():
+                                self.playlist_cli.add_music(voice_channel_id, params[0])
                         else:
-                            bot.queues[voice_channel_id] = {"musics": [params[0]]}
+                            self.playlist_cli.add_music(voice_channel_id, params[0])
 
-                    bot.loop.run_in_executor(
-                        None,
-                        self.download_and_play,
-                        {
-                            "filename": voice_channel_id,
-                            "voice_client": voice_client,
-                            "queue": bot.queues[voice_channel_id],
-                        },
-                    )
+                            bot.loop.run_in_executor(
+                                None,
+                                self.download_and_play,
+                                {
+                                    "voice_client": voice_client,
+                                    "voice_channel_id": voice_channel_id,
+                                },
+                                None,
+                            )
+                    else:
+                        self.playlist_cli.add_music(voice_channel_id, params[0])
+
+                        bot.loop.run_in_executor(
+                            None,
+                            self.download_and_play,
+                            {
+                                "voice_client": voice_client,
+                                "voice_channel_id": voice_channel_id,
+                            },
+                            None,
+                        )
 
                 else:
                     music = " ".join(params)

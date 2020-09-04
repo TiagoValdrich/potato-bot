@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 class PotatoBot(Client):
 
     session: ClientSession = None
-    queues = {}
 
     async def on_ready(self):
         game = Game("type !help for some info")
