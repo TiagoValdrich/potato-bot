@@ -17,7 +17,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 
-class PlayMusic(Command):
+class Play(Command):
 
     channel: TextChannel = None
     voice_channel: VoiceChannel = None
@@ -34,10 +34,18 @@ class PlayMusic(Command):
             "description": "Play Youtube songs on your current voice channel.\n Type `>play <youtube_url>` and have fun!",
         }
 
+    async def build(self, message: Message, bot):
+        self.channel = message.channel
+        self.voice_channel = message.author.voice.channel
+        await self.connect_voice(bot.voice_clients)
+        self.loop = bot.loop
+
+        return self
+
     async def send_music_title(self, youtube: YouTube):
         await self.channel.send(f"Playing now `{youtube.title}`")
 
-    def _download_and_play(self, error) -> None:
+    def download_and_play(self, error) -> None:
         musics = self.playlist_cli.get_musics(self.voice_channel.id)
 
         if musics and self.voice_client:
@@ -50,7 +58,7 @@ class PlayMusic(Command):
 
             self.voice_client.play(
                 FFmpegPCMAudio(f"resources/music/{self.voice_channel.id}.mp4"),
-                after=self._download_and_play,
+                after=self.download_and_play,
             )
 
             self.loop.create_task(self.send_music_title(yt))
@@ -90,7 +98,7 @@ class PlayMusic(Command):
             self.playlist_cli.add_music(self.voice_channel.id, video_url)
 
             if not self.voice_client.is_playing():
-                bot.loop.run_in_executor(None, self._download_and_play, None)
+                bot.loop.run_in_executor(None, self.download_and_play, None)
             else:
                 await self.channel.send(f"Music added to queue!")
 

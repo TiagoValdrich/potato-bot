@@ -26,12 +26,13 @@ class Queue(Command):
         }
 
     async def build_queue_embed(self, musics: List[str]) -> Embed:
-        embed = Embed(title="Musics on the queue:", color=0x4287F5)
+        embed = Embed(title="Musics on queue:", color=0x4287F5)
 
         for num, music in enumerate(musics, 1):
-            yt = YouTube(music)
-            name = f"{num} - {yt.title}"
-            embed.add_field(name=name, inline=False)
+            if music:
+                yt = YouTube(music)
+                name = f"#{num}"
+                embed.add_field(name=name, value=yt.title, inline=False)
 
         return embed
 
@@ -49,7 +50,7 @@ class Queue(Command):
                     embed = await self.build_queue_embed(musics)
                     await channel.send(embed=embed)
                 else:
-                    await channel.send("There is no musics on the queue!")
+                    await channel.send("There is no musics on queue!")
 
             return {"success": True}
         except Exception as e:

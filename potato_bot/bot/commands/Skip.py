@@ -1,22 +1,29 @@
 import logging
 
 from potato_bot.bot.models.Command import Command
-from discord import Message, VoiceChannel, VoiceClient
+from potato_bot.bot.models.PlaylistCli import PlaylistCli
+from potato_bot.bot.commands.Play import Play
+from discord import Message, VoiceChannel, TextChannel, VoiceClient
 from aiohttp import ClientSession
+from typing import List
+from pytube import YouTube
 
 logger = logging.getLogger(__name__)
 
 
-class Left(Command):
+class Skip(Command):
     """
-        Remove the bot from current voice channel if he is connected in
+        Skip the current music that is playing
     """
+
+    def __init__(self):
+        self.playlist_cli = PlaylistCli()
 
     @staticmethod
     def info():
         return {
-            "name": "left",
-            "description": "Remove the bot from current voice channel if he is connected in",
+            "name": "skip",
+            "description": "Skip the current music that is playing",
         }
 
     async def run(
@@ -31,10 +38,10 @@ class Left(Command):
                 if same_voice_channel:
                     if vc.is_playing():
                         vc.stop()
-
-                    await vc.disconnect()
+                        play = await Play().build(message, bot)
+                        play.download_and_play()
 
             return {"success": True}
         except Exception as e:
-            logger.error(f"An error has occurred when lefting channel: {e}")
+            logger.error(f"An error has occurred to skip music: {e}")
             return {"success": False}
