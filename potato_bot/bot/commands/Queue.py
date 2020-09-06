@@ -6,6 +6,7 @@ from discord import Message, VoiceChannel, Embed, TextChannel
 from aiohttp import ClientSession
 from typing import List
 from pytube import YouTube
+from multiprocessing import Pool
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +26,24 @@ class Queue(Command):
             "description": "Show musics in queue to play",
         }
 
-    async def build_queue_embed(self, musics: List[str]) -> Embed:
-        embed = Embed(title="Musics on queue:", color=0x4287F5)
+    @staticmethod
+    def fetch_video_title(url):
+        yt = YouTube(url)
+        return yt.title
 
-        for num, music in enumerate(musics, 1):
-            if music:
-                yt = YouTube(music)
-                name = f"#{num}"
-                embed.add_field(name=name, value=yt.title, inline=False)
+    async def build_queue_embed(self, musics: List[str], remaining: int) -> Embed:
+        embed = Embed(title="Next 5 musics on queue:", color=0x4287F5)
+
+        with Pool(5) as p:
+            results = p.map(Queue.fetch_video_title, musics)
+
+            for num, music_title in enumerate(results, 1):
+                if music_title:
+                    name = f"#{num}"
+                    embed.add_field(name=name, value=music_title, inline=False)
+
+            if remaining:
+                embed.set_footer(text=f"Total remaining on queue: {remaining}")
 
         return embed
 
@@ -47,7 +58,8 @@ class Queue(Command):
                 musics = self.playlist_cli.get_musics(voice_channel.id)
 
                 if musics:
-                    embed = await self.build_queue_embed(musics)
+                    real_music_list = musics[:10]
+                    embed = await self.build_queue_embed(real_music_list, len(musics))
                     await channel.send(embed=embed)
                 else:
                     await channel.send("There is no musics on queue!")

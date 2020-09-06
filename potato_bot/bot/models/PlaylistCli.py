@@ -26,3 +26,6 @@ class PlaylistCli:
     def get_next_music(self, voice_channel_id):
         return self._conn.lpop(voice_channel_id)
 
+    def delete_playlist(self, voice_channel_id):
+        return self._conn.delete(voice_channel_id)
+

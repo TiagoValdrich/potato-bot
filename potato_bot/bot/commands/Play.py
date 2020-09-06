@@ -11,7 +11,7 @@ from discord import (
     FFmpegPCMAudio,
 )
 from aiohttp import ClientSession
-from pytube import YouTube
+from pytube import YouTube, Playlist
 from typing import List
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class Play(Command):
     async def send_music_title(self, youtube: YouTube):
         await self.channel.send(f"Playing now `{youtube.title}`")
 
-    def download_and_play(self, error) -> None:
+    def download_and_play(self, error=None) -> None:
         musics = self.playlist_cli.get_musics(self.voice_channel.id)
 
         if musics and self.voice_client:
@@ -102,6 +102,18 @@ class Play(Command):
             else:
                 await self.channel.send(f"Music added to queue!")
 
+    async def playlist(self, video_urls: List[str], bot) -> None:
+        await self.connect_voice(bot.voice_clients)
+
+        if self.voice_client.is_connected():
+            for video_url in video_urls:
+                self.playlist_cli.add_music(self.voice_channel.id, video_url)
+
+            if not self.voice_client.is_playing():
+                bot.loop.run_in_executor(None, self.download_and_play, None)
+            else:
+                await self.channel.send(f"Playlist added to queue!")
+
     async def run(
         self, session: ClientSession, message: Message, params: List[str], bot,
     ) -> dict:
@@ -114,7 +126,15 @@ class Play(Command):
                 video_url = str(params[0])
 
                 if re.match("^(https:\/\/)", video_url):
-                    await self.play(video_url, bot)
+                    try:
+                        playlist = Playlist(video_url)
+                    except Exception:
+                        playlist = None
+
+                    if playlist:
+                        await self.playlist(playlist.video_urls, bot)
+                    else:
+                        await self.play(video_url, bot)
 
                 else:
                     music = " ".join(params).replace("--first-result", "")
