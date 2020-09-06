@@ -14,7 +14,7 @@ class PotatoBot(Client):
     session: ClientSession = None
 
     async def on_ready(self):
-        game = Game("type !help for some info")
+        game = Game("type >help for some info")
         self.session = ClientSession()
         await self.change_presence(status=Status.idle, activity=game)
         logger.info("☠ Initializing threads! ☠")

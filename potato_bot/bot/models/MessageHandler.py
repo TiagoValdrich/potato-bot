@@ -13,7 +13,7 @@ class MessageHandler:
         If the message is assign to a command, this class will instantiate the command
     """
 
-    BOT_PREFIX = "!"
+    BOT_PREFIX = ">"
     HELP_COMMAND = "help"
 
     def __init__(self, bot, message: Message, session: ClientSession):
