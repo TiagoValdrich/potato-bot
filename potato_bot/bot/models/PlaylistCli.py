@@ -17,12 +17,12 @@ class PlaylistCli:
     def get_playlists(self):
         return self._conn.keys(pattern="*")
 
-    def get_musics(self, channel_id):
-        return self._conn.lrange(channel_id, 0, -1)
+    def get_musics(self, voice_channel_id):
+        return self._conn.lrange(voice_channel_id, 0, -1)
 
-    def add_music(self, channel_id, music_url: str):
-        return self._conn.rpush(channel_id, music_url)
+    def add_music(self, voice_channel_id, music_url: str):
+        return self._conn.rpush(voice_channel_id, music_url)
 
-    def get_next_music(self, channel_id):
-        return self._conn.lpop(channel_id)
+    def get_next_music(self, voice_channel_id):
+        return self._conn.lpop(voice_channel_id)
 

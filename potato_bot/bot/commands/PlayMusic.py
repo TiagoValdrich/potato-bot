@@ -58,8 +58,8 @@ class PlayMusic(Command):
     def build_musics_embed(self, musics: list) -> Embed:
         embed = Embed(title="Select a music from list below", color=0x4287F5)
 
-        for num, music in enumerate(musics):
-            name = "#" + str((num + 1))
+        for num, music in enumerate(musics, 1):
+            name = f"#{num}"
             title = music["title"]
             embed.add_field(name=name, value=title, inline=False)
 
