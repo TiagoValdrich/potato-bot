@@ -21,7 +21,10 @@ class PotatoBot(Client):
         logger.info("🍠 Potato bot is running! 🍠")
 
     async def on_message(self, message: Message):
-        await MessageHandler(self, message, self.session).handle()
+        try:
+            await MessageHandler(self, message, self.session).handle()
+        except Exception:
+            logger.exception("Error handling message", exc_info=True)
 
     async def on_disconnect(self):
         logger.info("Closing session connection!")

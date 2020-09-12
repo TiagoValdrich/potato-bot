@@ -32,9 +32,9 @@ class Queue(Command):
         return yt.title
 
     async def build_queue_embed(self, musics: List[str], remaining: int) -> Embed:
-        embed = Embed(title="Next 10 musics on queue:", color=0x4287F5)
+        embed = Embed(title="Next 5 musics on queue:", color=0x4287F5)
 
-        with Pool(5) as p:
+        with Pool(2) as p:
             results = p.map(Queue.fetch_video_title, musics)
 
             for num, music_title in enumerate(results, 1):
@@ -58,7 +58,7 @@ class Queue(Command):
                 musics = self.playlist_cli.get_musics(voice_channel.id)
 
                 if musics:
-                    real_music_list = musics[:10]
+                    real_music_list = musics[:5]
                     embed = await self.build_queue_embed(real_music_list, len(musics))
                     await channel.send(embed=embed)
                 else:
