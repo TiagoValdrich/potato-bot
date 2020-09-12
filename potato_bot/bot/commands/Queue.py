@@ -32,7 +32,7 @@ class Queue(Command):
         return yt.title
 
     async def build_queue_embed(self, musics: List[str], remaining: int) -> Embed:
-        embed = Embed(title="Next 5 musics on queue:", color=0x4287F5)
+        embed = Embed(title="Next 10 musics on queue:", color=0x4287F5)
 
         with Pool(5) as p:
             results = p.map(Queue.fetch_video_title, musics)
