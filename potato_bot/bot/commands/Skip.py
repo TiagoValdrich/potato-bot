@@ -41,6 +41,9 @@ class Skip(Command):
                         play = await Play().build(message, bot)
                         play.download_and_play()
 
+                if same_voice_channel:
+                    print("batata ponto com")
+
             return {"success": True}
         except Exception as e:
             logger.error(f"An error has occurred to skip music: {e}")
